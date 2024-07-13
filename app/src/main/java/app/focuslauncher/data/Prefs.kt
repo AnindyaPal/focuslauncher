@@ -86,6 +86,8 @@ class Prefs(context: Context) {
     private val CALENDAR_APP_PACKAGE = "CALENDAR_APP_PACKAGE"
     private val CALENDAR_APP_USER = "CALENDAR_APP_USER"
     private val CALENDAR_APP_CLASS_NAME = "CALENDAR_APP_CLASS_NAME"
+    private val LastLaunchDate = "LastLaunchDate"
+    private val InstagramTimeSpent = "InstagramTimeSpent"
 
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_FILENAME, 0);
 
@@ -389,6 +391,13 @@ class Prefs(context: Context) {
         get() = prefs.getString(CALENDAR_APP_CLASS_NAME, "").toString()
         set(value) = prefs.edit().putString(CALENDAR_APP_CLASS_NAME, value).apply()
 
+    var lastLaunchDate: Long?
+        get() = prefs.getLong(LastLaunchDate, 0)
+        set(value) = prefs.edit().putLong(LastLaunchDate, value!!).apply()
+    var instagramTimeSpent: Long?
+        get() = prefs.getLong(InstagramTimeSpent, 0)
+        set(value) = prefs.edit().putLong(InstagramTimeSpent, value!!).apply()
+
     fun getAppName(location: Int): String {
         return when (location) {
             1 -> prefs.getString(APP_NAME_1, "").toString()
@@ -447,5 +456,6 @@ class Prefs(context: Context) {
 
     fun getAppRenameLabel(appPackage: String): String = prefs.getString(appPackage, "").toString()
 
-    fun setAppRenameLabel(appPackage: String, renameLabel: String) = prefs.edit().putString(appPackage, renameLabel).apply()
+    fun setAppRenameLabel(appPackage: String, renameLabel: String) =
+        prefs.edit().putString(appPackage, renameLabel).apply()
 }

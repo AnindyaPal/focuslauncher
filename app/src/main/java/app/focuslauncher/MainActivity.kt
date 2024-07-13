@@ -1,20 +1,17 @@
 package app.focuslauncher
 
-import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.admin.DeviceAdminReceiver
-import android.app.admin.DevicePolicyManager
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.content.pm.ServiceInfo
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.text.TextUtils
 import android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
 import android.view.accessibility.AccessibilityManager
 import android.widget.Toast
@@ -29,6 +26,7 @@ import app.focuslauncher.databinding.ActivityMainBinding
 import app.focuslauncher.helper.*
 import java.util.*
 
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var prefs: Prefs
@@ -38,7 +36,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val REQUEST_OVERLAY_PERMISSION = 1
-        private const val REQUEST_ACCESSIBILITY_SERVICE = 2    }
+    }
 
     override fun onBackPressed() {
         if (navController.currentDestination?.id != R.id.mainFragment)
@@ -81,41 +79,38 @@ class MainActivity : AppCompatActivity() {
                 Uri.parse("package:$packageName")
             )
             startActivityForResult(intent, REQUEST_OVERLAY_PERMISSION)
-        } else {
-            checkAndStartAccessibilityService()
         }
 
+        if (!Settings.canDrawOverlays(this)) {
+            requestOverlayPermission()
+        }
 
-    }
-
-    private fun checkAndStartAccessibilityService() {
-        if (!isAccessibilityServiceEnabled(this, MyAccessibilityService::class.java)) {
-            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-            startActivityForResult(intent, REQUEST_ACCESSIBILITY_SERVICE)
-        } else {
-            // Optionally, you can start the TimerService directly if you want to test it
-            // val intent = Intent(this, TimerService::class.java)
-            // startService(intent)
+        // Check if it's a new day
+        if (isNewDay()) {
+            // Perform actions for a new day (e.g., reset daily tasks, update UI)
+            resetDailyActions()
         }
     }
 
-    private fun isAccessibilityServiceEnabled(context: Context, service: Class<out AccessibilityService>): Boolean {
-        val am = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
-        val enabledServices = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
-        val colonSplitter = TextUtils.SimpleStringSplitter(':')
-        colonSplitter.setString(enabledServices)
-        while (colonSplitter.hasNext()) {
-            val componentName = ComponentName.unflattenFromString(colonSplitter.next())
-            if (componentName != null && componentName.packageName == context.packageName && componentName.className == service.name) {
-                return true
-            }
-        }
-        return false
+    private fun resetDailyActions() {
+        // save current date and new date
+        prefs.lastLaunchDate = System.currentTimeMillis()
     }
 
-    private fun startMyAccessibilityService() {
-
+    private fun isNewDay(): Boolean {
+        val lastDate = prefs.lastLaunchDate
+        val savedCalendar = Calendar.getInstance()
+        savedCalendar.timeInMillis = lastDate!!
+        return savedCalendar.get(Calendar.DAY_OF_YEAR) != Calendar.getInstance()
+            .get(Calendar.DAY_OF_YEAR)
     }
+
+    private fun requestOverlayPermission() {
+        val intent =
+            Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+        startActivityForResult(intent, REQUEST_OVERLAY_PERMISSION)
+    }
+
 
     override fun onStop() {
         backToHomeScreen()
@@ -200,17 +195,13 @@ class MainActivity : AppCompatActivity() {
             }
 
             REQUEST_OVERLAY_PERMISSION -> {
-                if (Settings.canDrawOverlays(this)) {
-                    startMyAccessibilityService()
-                } else {
-                    // Permission not granted, show a message to the user
-                    // Optionally, you can guide the user to grant the permission
+                if (!Settings.canDrawOverlays(this)) {
+                    Toast.makeText(this, "Overlay permission not granted", Toast.LENGTH_SHORT)
+                        .show()
+
                 }
             }
 
-            REQUEST_ACCESSIBILITY_SERVICE -> {
-                checkAndStartAccessibilityService()
-            }
         }
     }
 }
