@@ -341,27 +341,8 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
 
 
     private fun toggleLockMode() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            if (prefs.lockModeOn) {
-                prefs.lockModeOn = false
-                removeActiveAdmin()
-            }
-        } else {
-            val isAdmin: Boolean = deviceManager.isAdminActive(componentName)
-            if (isAdmin) {
-                removeActiveAdmin("Admin permission removed.")
-                prefs.lockModeOn = false
-            } else {
-                val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
-                intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName)
-                intent.putExtra(
-                    DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                    getString(R.string.admin_permission_message)
-                )
-                requireActivity().startActivityForResult(intent, Constants.REQUEST_CODE_ENABLE_ADMIN)
-            }
-        }
-        populateLockSettings()
+        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+        startActivity(intent)
     }
 
     private fun removeActiveAdmin(toastMessage: String? = null) {

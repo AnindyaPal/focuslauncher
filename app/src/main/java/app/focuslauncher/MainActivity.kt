@@ -1,15 +1,22 @@
 package app.focuslauncher
 
+import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.admin.DeviceAdminReceiver
+import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.text.TextUtils
 import android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+import android.view.accessibility.AccessibilityManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -28,6 +35,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavController
     private lateinit var viewModel: MainViewModel
     private lateinit var binding: ActivityMainBinding
+
+    companion object {
+        private const val REQUEST_OVERLAY_PERMISSION = 1
+        private const val REQUEST_ACCESSIBILITY_SERVICE = 2    }
 
     override fun onBackPressed() {
         if (navController.currentDestination?.id != R.id.mainFragment)
@@ -63,6 +74,47 @@ class MainActivity : AppCompatActivity() {
         setupOrientation()
 
         window.addFlags(FLAG_LAYOUT_NO_LIMITS)
+
+        if (!Settings.canDrawOverlays(this)) {
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+            startActivityForResult(intent, REQUEST_OVERLAY_PERMISSION)
+        } else {
+            checkAndStartAccessibilityService()
+        }
+
+
+    }
+
+    private fun checkAndStartAccessibilityService() {
+        if (!isAccessibilityServiceEnabled(this, MyAccessibilityService::class.java)) {
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+            startActivityForResult(intent, REQUEST_ACCESSIBILITY_SERVICE)
+        } else {
+            // Optionally, you can start the TimerService directly if you want to test it
+            // val intent = Intent(this, TimerService::class.java)
+            // startService(intent)
+        }
+    }
+
+    private fun isAccessibilityServiceEnabled(context: Context, service: Class<out AccessibilityService>): Boolean {
+        val am = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+        val enabledServices = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
+        val colonSplitter = TextUtils.SimpleStringSplitter(':')
+        colonSplitter.setString(enabledServices)
+        while (colonSplitter.hasNext()) {
+            val componentName = ComponentName.unflattenFromString(colonSplitter.next())
+            if (componentName != null && componentName.packageName == context.packageName && componentName.className == service.name) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun startMyAccessibilityService() {
+
     }
 
     override fun onStop() {
@@ -145,6 +197,19 @@ class MainActivity : AppCompatActivity() {
 
             Constants.REQUEST_CODE_LAUNCHER_SELECTOR -> {
                 resetDefaultLauncher()
+            }
+
+            REQUEST_OVERLAY_PERMISSION -> {
+                if (Settings.canDrawOverlays(this)) {
+                    startMyAccessibilityService()
+                } else {
+                    // Permission not granted, show a message to the user
+                    // Optionally, you can guide the user to grant the permission
+                }
+            }
+
+            REQUEST_ACCESSIBILITY_SERVICE -> {
+                checkAndStartAccessibilityService()
             }
         }
     }

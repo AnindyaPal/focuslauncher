@@ -9,7 +9,11 @@ import androidx.annotation.RequiresApi
 import app.focuslauncher.R
 import app.focuslauncher.data.Prefs
 
+
 class MyAccessibilityService : AccessibilityService() {
+
+    private val INSTAGRAM_PACKAGE = "com.instagram.android"
+    private var isInstagramOpen = false
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         return START_STICKY
@@ -28,6 +32,22 @@ class MyAccessibilityService : AccessibilityService() {
                 (source.contentDescription == getString(R.string.lock_layout_description))
             )
                 performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
+
+            if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+                val packageName = event.packageName?.toString()
+                if (INSTAGRAM_PACKAGE == packageName) {
+                    if (!isInstagramOpen) {
+                        isInstagramOpen = true
+                        TimerService.startTimer(this)
+                    }
+                } else {
+                    if (isInstagramOpen) {
+                        isInstagramOpen = false
+                        TimerService.stopTimer(this)
+                    }
+                }
+            }
+
         } catch (e: Exception) {
             return
         }
@@ -36,4 +56,6 @@ class MyAccessibilityService : AccessibilityService() {
     override fun onInterrupt() {
 
     }
+
+
 }
