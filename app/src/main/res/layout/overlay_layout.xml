@@ -1,0 +1,10 @@
+<!-- Example overlay layout -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/timerTextView"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="00:00"
+    android:textSize="24sp"
+    android:textColor="@android:color/white"
+    android:padding="8dp"
+    android:background="@android:color/black"/>
